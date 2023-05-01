@@ -1,4 +1,4 @@
-﻿using System.Device.Gpio;
+﻿using PLCProgramTester.RunTime;
 
 namespace PLCProgramTester
 {
@@ -8,53 +8,72 @@ namespace PLCProgramTester
     internal class TestData
     {
         /// <summary>
+        /// Путь, по которому хранится данный тест
+        /// </summary>
+        public readonly string Path;
+
+        /// <summary>
         /// Очередь контрольны точек
         /// </summary>
-        public Queue<CheckPoint> CheckPoints = new Queue<CheckPoint>();
+        public Queue<TestStageData> Stages = new Queue<TestStageData>();
 
 
         /// <summary>
-        /// Словарь Индекс выхода -> Адрес пина Raspberry
+        /// Индекс выхода ПЛК -> Порт Raspberry
         /// </summary>
-        public Dictionary<int, int> OutputsIndexAddressPairs = new Dictionary<int, int>();
+        public Dictionary<int, int> PLCOutputsIndexGPIOPairs = new Dictionary<int, int>();
 
         /// <summary>
-        /// Словарь Индекс входа -> Адрес пина Raspberry
+        /// Индекс входа ПЛК -> Порт Raspberry
         /// </summary>
-        public Dictionary<int, int> InputsIndexAddressPairs = new Dictionary<int, int>();
+        public Dictionary<int, int> PLCInputsIndexGPIOPairs = new Dictionary<int, int>();
 
 
 
         /// <summary>
-        /// Выводит информацию о контрольных точках в консоль
+        /// Конуструктор, присваивающий значение readonly полю Path
+        /// </summary>
+        /// <param name="path"></param>
+        public TestData(string path)
+        {
+            Path = path;
+        }
+
+
+
+        /// <summary>
+        /// Выводит информацию об этапах теста в консоль
         /// </summary>
         public void Print()
         {
-            while(CheckPoints.Count > 0)
+            Console.WriteLine();
+            for(int j = 0; j < Stages.Count; j++)
             {
-                CheckPoint checkPoint = CheckPoints.Dequeue();
-                Console.WriteLine($"\n\nStart time: {checkPoint.StartTime} ms");
+                TestStageData stage = Stages.ElementAt(j);
+                Console.WriteLine($"Продолжительность этапа: {stage.Duration} ms");
 
-                Console.WriteLine("Outputs:");
-                if(checkPoint.Outputs != null)
+                Console.WriteLine("Выходы ПЛК:");
+                if(stage.PLCOutputs != null)
                 {
-                    for(int i = 0; i < checkPoint.Outputs.Length; i++)
+                    for(int i = 0; i < stage.PLCOutputs.Length; i++)
                     {
-                        int address = OutputsIndexAddressPairs[i];
-                        Console.Write($"{address} = {checkPoint.Outputs[i]}\t");
+                        int address = PLCOutputsIndexGPIOPairs[i];
+                        Console.Write($"{address} = {stage.PLCOutputs[i]}\t");
                     }
                 }
 
-                Console.WriteLine("\nInputs:");
-                if(checkPoint.Inputs != null)
+                Console.WriteLine("\nВходы ПЛК:");
+                if(stage.PLCInputs != null)
                 {
-                    for(int i = 0; i < checkPoint.Inputs.Length; i++)
+                    for(int i = 0; i < stage.PLCInputs.Length; i++)
                     {
-                        int address = InputsIndexAddressPairs[i];
-                        Console.Write($"{address} = {checkPoint.Inputs[i]}\t");
+                        int address = PLCInputsIndexGPIOPairs[i];
+                        Console.Write($"{address} = {stage.PLCInputs[i]}\t");
                     }
                 }
+                Console.WriteLine();
             }
+            Console.WriteLine();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using PLCProgramTester.FileReading;
+using PLCProgramTester.RunTime;
 using System.Device.Gpio;
 
 namespace PLCProgramTester
@@ -14,15 +15,26 @@ namespace PLCProgramTester
             SettingsDecoder.ReadSettings();
             OpenPins(Settings.PLCtoRaspberryAddresses);
 
-            if(!TestDecoder.TryDecodeTest("test.txt", out var test))
+            DoTest("test.txt");
+        }
+
+        private static void DoTest(string path)
+        {
+            if(!TestDecoder.TryDecodeTest(path, out var test))
+            {
+                Console.WriteLine($"Тест {path} пропущен из-за ошибки");
                 return;
-            
+            }
+
             if(Settings.DebugMode)
                 test.Print();
+
+            TestRunTime.Start(test);
         }
 
         private static void OpenPins(Dictionary<string, int> addressPairs)
         {
+            Console.WriteLine("Открытие GPIO-пинов Raspberry и их связывание с ПЛК");
             foreach(var address in addressPairs.Keys)
             {
                 int index = addressPairs[address];
@@ -30,8 +42,9 @@ namespace PLCProgramTester
                 //Controller.OpenPin(index);
 
                 if(Settings.DebugMode)
-                    Console.WriteLine($"Пин {index} открыт и подключён к {address}");
+                    Console.WriteLine($"GPIO {index} -> {address}");
             }
+            Console.WriteLine();
         }
     }
 }

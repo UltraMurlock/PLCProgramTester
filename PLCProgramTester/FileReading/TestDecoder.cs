@@ -1,4 +1,6 @@
-﻿namespace PLCProgramTester.FileReading
+﻿using PLCProgramTester.RunTime;
+
+namespace PLCProgramTester.FileReading
 {
     /// <summary>
     /// Класс, отвечающий за чтение теста из файла
@@ -17,7 +19,7 @@
         /// <returns>Истина, если тест прочитан успешно</returns>
         public static bool TryDecodeTest(string path, out TestData test)
         {
-            test = new TestData();
+            test = new TestData(path);
             string[] lines = File.ReadAllLines(path);
 
             //Поиск первой строки теста (строки инициализации)
@@ -36,13 +38,13 @@
                     continue;
                 }
 
-                if (!TryInitialize(lines[i], out var outputIndexAddressPairs, out var inputIndexAddressPairs))
+                if (!TryInitialize(lines[i], out var inputIndexAddressPairs, out var outputIndexAddressPairs))
                 {
                     Console.WriteLine($"Ошибка инициализации теста {path} в строке {i}");
                     return false;
                 }
-                test.OutputsIndexAddressPairs = outputIndexAddressPairs;
-                test.InputsIndexAddressPairs = inputIndexAddressPairs;
+                test.PLCInputsIndexGPIOPairs = inputIndexAddressPairs;
+                test.PLCOutputsIndexGPIOPairs = outputIndexAddressPairs;
                 break;
             }
 
@@ -55,10 +57,10 @@
 
                 if (!TryDecodeLine(lines[i], out var checkPoint))
                 {
-                    Console.WriteLine($"Ошибка чтения контрольной точки теста {path} в строке {i}");
+                    Console.WriteLine($"Ошибка чтения этапа теста {path} в строке {i}");
                     return false;
                 }
-                test.CheckPoints.Enqueue(checkPoint);
+                test.Stages.Enqueue(checkPoint);
             }
 
             Console.WriteLine($"Тест {path} прочитан успешно");
@@ -67,18 +69,9 @@
 
 
 
-        private static string[] RemoveCommentedLines(string[] lines)
-        {
-            List<string> linesList = new List<string>(lines);
-            for (int i = linesList.Count - 1; i >= 0; i--)
-            {
-                if (linesList[i].StartsWith(COMMENT_MARKER))
-                    linesList.RemoveAt(i);
-            }
-
-            return linesList.ToArray();
-        }
-
+        /// <summary>
+        /// Возвращает истину, если строка пустая или являющаяся комментарием
+        /// </summary>
         private static bool IsWhiteSpaceOrComment(string line)
         {
             if (line.StartsWith(COMMENT_MARKER))
@@ -89,7 +82,17 @@
             return false;
         }
 
-        private static bool TryInitialize(string line, out Dictionary<int, int> outputDictionary, out Dictionary<int, int> inputDictionary)
+        /// <summary>
+        /// Преобразует строку инициализации теста 
+        /// (первую не пустую и не закомментированную строку в файле теста)
+        /// в массивы соответствия индекса столбцов входов/выходов в файле теста
+        /// с портами Raspberry
+        /// </summary>
+        /// <param name="line">Строка для инициализации</param>
+        /// <param name="outputDictionary">Индекс столбца (выхода ПЛК) -> Порт Raspberry</param>
+        /// <param name="inputDictionary">Индекс столбца (входа ПЛК) -> Порт Raspberry</param>
+        /// <returns>Истина, если инициализация прошла успешно</returns>
+        private static bool TryInitialize(string line, out Dictionary<int, int> inputDictionary, out Dictionary<int, int> outputDictionary)
         {
             outputDictionary = new Dictionary<int, int>();
             inputDictionary = new Dictionary<int, int>();
@@ -99,40 +102,60 @@
 
             for (int i = 0; i < splittedLine.Outputs.Length; i++)
             {
-                int address;
-                if (!int.TryParse(splittedLine.Outputs[i], out address))
+                string PLCAddress = splittedLine.Outputs[i];
+                if(!Settings.PLCtoRaspberryAddresses.ContainsKey(PLCAddress))
+                {
+                    Console.WriteLine($"Запрашиваемый порт ПЛК {PLCAddress} не сопряжён с портом Raspberry в файле settings.ini");
                     return false;
-                outputDictionary.Add(i, address);
+                }
+
+                int raspberryAddress = Settings.PLCtoRaspberryAddresses[PLCAddress];
+                outputDictionary.Add(i, raspberryAddress);
             }
 
             for (int i = 0; i < splittedLine.Inputs.Length; i++)
             {
-                int address;
-                if (!int.TryParse(splittedLine.Inputs[i], out address))
+                string PLCAddress = splittedLine.Inputs[i];
+                if(!Settings.PLCtoRaspberryAddresses.ContainsKey(PLCAddress))
+                {
+                    Console.WriteLine($"Запрашиваемый порт ПЛК {PLCAddress} не сопряжён с портом Raspberry в файле settings.ini");
                     return false;
-                inputDictionary.Add(i, address);
+                }
+
+                int raspberryAddress = Settings.PLCtoRaspberryAddresses[PLCAddress];
+                inputDictionary.Add(i, raspberryAddress);
             }
 
             return true;
         }
 
-        private static bool TryDecodeLine(string line, out CheckPoint checkPoint)
+        /// <summary>
+        /// Преобразует сырую строку об этапе теста в TestDtageData
+        /// </summary>
+        /// <returns>Истина, если преобразование прошло успешно</returns>
+        private static bool TryDecodeLine(string line, out TestStageData checkPoint)
         {
-            checkPoint = new CheckPoint();
+            checkPoint = new TestStageData();
 
             if (!TrySplitLine(line, out var splittedLine))
                 return false;
 
-            if (!int.TryParse(splittedLine.Time, out checkPoint.StartTime))
+            if (!int.TryParse(splittedLine.Time, out checkPoint.Duration))
                 return false;
-            if (!TryParseArrayToBool(splittedLine.Outputs, out checkPoint.Outputs))
+            if (!TryParseArrayToBool(splittedLine.Outputs, out checkPoint.PLCOutputs))
                 return false;
-            if (!TryParseArrayToBool(splittedLine.Inputs, out checkPoint.Inputs))
+            if (!TryParseArrayToBool(splittedLine.Inputs, out checkPoint.PLCInputs))
                 return false;
 
             return true;
         }
 
+        /// <summary>
+        /// Разбивает строку о этапе теста на строку с временем, 
+        /// массив строк выходов и массив строк с входами
+        /// для дальнейшей обработки
+        /// </summary>
+        /// <returns>Истина, если разбиение прошло успешно</returns>
         private static bool TrySplitLine(string line, out SplittedLine result)
         {
             result = new SplittedLine();
@@ -159,6 +182,10 @@
             return true;
         }
 
+        /// <summary>
+        /// Преобразует массив строк в массив соответствующих булевых значений
+        /// </summary>
+        /// <returns>Истина, если преобразование прошло успешно</returns>
         private static bool TryParseArrayToBool(string[] strings, out bool[] bools)
         {
             bools = new bool[strings.Length];
@@ -180,6 +207,10 @@
             return true;
         }
 
+        /// <summary>
+        /// Удаляет из массива пустые строки
+        /// </summary>
+        /// <returns>Массив без пустых строк</returns>
         private static string[] RemoveWhiteSpaceStrings(string[] array)
         {
             List<string> strings = new List<string>(array);

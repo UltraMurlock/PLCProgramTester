@@ -7,8 +7,9 @@ namespace PLCProgramTester.FileReading
     /// </summary>
     internal static class SettingsDecoder
     {
-        private static bool _defaultDebug = false;
-        private static int _defaultMaxErrorTime = 500;
+        private const bool _defaultDebug = false;
+        private const int _defaultMaxErrorTime = 500;
+        private const int _defaultChecksFrequency = 50;
 
 
 
@@ -24,6 +25,9 @@ namespace PLCProgramTester.FileReading
 
             int maxErrorTime = ReadMaxErrorTime(handler);
             Settings.MaxErrorTime = maxErrorTime;
+
+            int checksFrequency = ReadChecksFrequency(handler);
+            Settings.ChecksFrequency = checksFrequency;
 
             var PLCtoRaspberryAddresses = ReadPinsSettings(handler);
             Settings.PLCtoRaspberryAddresses = PLCtoRaspberryAddresses;
@@ -42,6 +46,23 @@ namespace PLCProgramTester.FileReading
                 return _defaultDebug;
             }
             return debugMode;
+        }
+
+        /// <summary>
+        /// Ищет в файле настроек ключ "checks frequency", 
+        /// отвечающий за время между проверками входов Raspberry 
+        /// во время тестов
+        /// </summary>
+        /// <returns>Время в миллисекундах</returns>
+        private static int ReadChecksFrequency(INIHandler handler)
+        {
+            int maxErrorTime;
+            if(!handler.TryGetInt(String.Empty, "checks frequency", out maxErrorTime))
+            {
+                Console.WriteLine($"Ошибка при чтении поля \"checks frequency\" настроек. Использовано значение по умолчанию ({_defaultChecksFrequency})");
+                return _defaultMaxErrorTime;
+            }
+            return maxErrorTime;
         }
 
         /// <summary>

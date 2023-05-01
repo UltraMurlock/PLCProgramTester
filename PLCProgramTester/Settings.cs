@@ -18,6 +18,12 @@
         public static int MaxErrorTime;
 
         /// <summary>
+        /// Время между проверками входов Raspberry 
+        /// во время тестов
+        /// </summary>
+        public static int ChecksFrequency;
+
+        /// <summary>
         /// Режим дебага
         /// </summary>
         public static bool DebugMode;
