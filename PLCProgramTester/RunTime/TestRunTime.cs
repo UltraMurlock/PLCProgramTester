@@ -15,6 +15,9 @@ namespace PLCProgramTester.RunTime
         {
             Console.WriteLine($"Тест {testData.Path} запущен в проверку");
 
+            //!!!НЕ ЗАБЫТЬ!!!
+            //Перестроить использование словарей на использование массивов, так как
+            //сейчас массив ключей всё равно совпадает с индексами в массиве значений
             Dictionary<int, int> outputsIndexAddressPairs = testData.PLCOutputsIndexGPIOPairs;
             Dictionary<int, int> inputsIndexAddressPairs = testData.PLCInputsIndexGPIOPairs;
 
@@ -23,17 +26,32 @@ namespace PLCProgramTester.RunTime
 
             Stopwatch stageStopwatch = new Stopwatch();
             Stopwatch iterationStopwatch = new Stopwatch();
-            while(testData.Stages.Count > 0)
+
+            bool errorFlag = false;
+            while(testData.Stages.Count > 0 && !errorFlag)
             {
+                if(Settings.DebugMode)
+                    Console.WriteLine("Следующий этап теста");
+
                 stageStopwatch.Restart();
 
                 stage = testData.Stages.Dequeue();
                 UpdateOutputs(stage, outputsIndexAddressPairs);
+
+                //Массив, помогающий отслеживать изменения состояний выходов ПЛК во времени
+                bool[] PLCOutputsPreviousStage = ReadInputs(inputsIndexAddressPairs);
                 while(stageStopwatch.ElapsedMilliseconds < stage.Duration)
                 {
                     iterationStopwatch.Restart();
 
-                    CheckInputs(stage, inputsIndexAddressPairs);
+                    bool[] PLCOutputsCurrentStage = ReadInputs(inputsIndexAddressPairs);
+                    if(!CheckInputs(stage, (int)stageStopwatch.ElapsedMilliseconds, PLCOutputsCurrentStage, PLCOutputsPreviousStage, inputsIndexAddressPairs))
+                    {
+                        errorFlag = true;
+                        break;
+                    }
+                    PLCOutputsPreviousStage = PLCOutputsCurrentStage;
+
 
                     int sleepTime = Settings.ChecksFrequency - (int)iterationStopwatch.ElapsedMilliseconds;
                     sleepTime = sleepTime < 0 ? 0 : sleepTime;
@@ -63,15 +81,50 @@ namespace PLCProgramTester.RunTime
                 //Пока закомментировано, так как вызывает исключение на Windows
                 //Program.Controller.Write(raspberryAddress, pinValue);
             }
-
         }
 
         /// <summary>
-        /// Проверка выходов ПЛК (входов Raspberry)
+        /// Проверка выходов ПЛК на соответствие заданным на этапе (входов Raspberry)
         /// </summary>
-        private static void CheckInputs(TestStageData stage, Dictionary<int, int> inputsIndexAddressPairs)
+        private static bool CheckInputs(TestStageData stage, int timeFromStageStart, bool[] currentIterationActivity, bool[] previousIterationActivity, Dictionary<int, int> inputsIndexAddressPairs)
         {
-            //Проверка входов и запись их в логи
+            for(int i = 0; i < previousIterationActivity.Length; i++)
+            {
+                //Если значение правильное, то пропускаем
+                if(currentIterationActivity[i] == stage.PLCOutputs[i])
+                    continue;
+
+                //Если значение на входе Raspberry не изменилось (не произошло инзменения с правильного на неправильное)
+                //И время на изменение не закончилось (неправильное значение ещё может измениться в будущем без ошибки),
+                //то пропускаем
+                if(currentIterationActivity[i] == previousIterationActivity[i] && timeFromStageStart < Settings.MaxErrorTime)
+                    continue;
+
+                //Иначе, тест провален
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Тест провален!");
+                Console.ForegroundColor = ConsoleColor.Gray;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Считывание активности выходов ПЛК (входов Raspberry)
+        /// </summary>
+        private static bool[] ReadInputs(Dictionary<int, int> inputsIndexAddressPairs)
+        {
+            bool[] inputsActivity = new bool[inputsIndexAddressPairs.Count];
+
+            for(int i = 0; i < inputsIndexAddressPairs.Count; i++)
+            {
+                int gpio = inputsIndexAddressPairs[i];
+                //Пока закомментировано, так как вызывает исключение на Windows
+                //PinValue pinValue = Program.Controller.Read(gpio);
+                //inputsActivity[i] = pinValue == PinValue.High;
+            }
+            return inputsActivity;
         }
 
 
