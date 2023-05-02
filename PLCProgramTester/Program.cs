@@ -18,6 +18,8 @@ namespace PLCProgramTester
             DoTest("test.txt");
         }
 
+
+
         private static void DoTest(string path)
         {
             if(!TestDecoder.TryDecodeTest(path, out var test))

@@ -69,13 +69,13 @@ namespace PLCProgramTester.RunTime
         /// <summary>
         /// Проверка выходов ПЛК (входов Raspberry)
         /// </summary>
-        public static void CheckInputs(TestStageData stage, Dictionary<int, int> inputsIndexAddressPairs)
+        private static void CheckInputs(TestStageData stage, Dictionary<int, int> inputsIndexAddressPairs)
         {
             //Проверка входов и запись их в логи
         }
 
 
-        public static void DeactivateAllOutputs(Dictionary<int, int> outputsIndexAddressPairs)
+        private static void DeactivateAllOutputs(Dictionary<int, int> outputsIndexAddressPairs)
         {
             var addresses = outputsIndexAddressPairs.Values;
 

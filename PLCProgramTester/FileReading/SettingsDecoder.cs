@@ -7,6 +7,16 @@ namespace PLCProgramTester.FileReading
     /// </summary>
     internal static class SettingsDecoder
     {
+        private const string _keyDebug = "debug";
+        private const string _keyMaxErrorTime = "max error time";
+        private const string _keyChecksFrequency = "checks frequency";
+        private static readonly string[] _keysPLCOutputs = new string[] {
+            "Y0", "Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7", "Y8", "Y9",
+            "YA", "YB", "YC", "YD" };
+        private static readonly string[] _keysPLCInputs = new string[] {
+            "X0", "X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8", "X9",
+            "XA", "XB", "XC", "XD", "XE", "XF" };
+
         private const bool _defaultDebug = false;
         private const int _defaultMaxErrorTime = 500;
         private const int _defaultChecksFrequency = 50;
@@ -34,22 +44,22 @@ namespace PLCProgramTester.FileReading
         }
 
         /// <summary>
-        /// Ищет в файле настроек ключ "debug", 
+        /// Ищет в файле настроек ключ _keyDebug, 
         /// отвечающий за активирование режима дебага
         /// </summary>
         private static bool ReadDebugMode(INIHandler handler)
         {
             bool debugMode;
-            if(!handler.TryGetBool(String.Empty, "debug", out debugMode))
+            if(!handler.TryGetBool(String.Empty, _keyDebug, out debugMode))
             {
-                Console.WriteLine($"Ошибка при чтении поля \"debug\" настроек. Использовано значение по умолчанию ({_defaultDebug})");
+                Console.WriteLine($"Ошибка при чтении поля \"{_keyDebug}\" настроек. Использовано значение по умолчанию ({_defaultDebug})");
                 return _defaultDebug;
             }
             return debugMode;
         }
 
         /// <summary>
-        /// Ищет в файле настроек ключ "checks frequency", 
+        /// Ищет в файле настроек ключ _keyChecksFrequency, 
         /// отвечающий за время между проверками входов Raspberry 
         /// во время тестов
         /// </summary>
@@ -57,16 +67,16 @@ namespace PLCProgramTester.FileReading
         private static int ReadChecksFrequency(INIHandler handler)
         {
             int maxErrorTime;
-            if(!handler.TryGetInt(String.Empty, "checks frequency", out maxErrorTime))
+            if(!handler.TryGetInt(String.Empty, _keyChecksFrequency, out maxErrorTime))
             {
-                Console.WriteLine($"Ошибка при чтении поля \"checks frequency\" настроек. Использовано значение по умолчанию ({_defaultChecksFrequency})");
+                Console.WriteLine($"Ошибка при чтении поля \"{_keyChecksFrequency}\" настроек. Использовано значение по умолчанию ({_defaultChecksFrequency})");
                 return _defaultMaxErrorTime;
             }
             return maxErrorTime;
         }
 
         /// <summary>
-        /// Ищет в файле настроек ключ "max time error", 
+        /// Ищет в файле настроек ключ _keyMaxErrorTime, 
         /// отвечающий за максимально допустимое время 
         /// запаздания изменения состояния выхода ПЛК
         /// </summary>
@@ -74,9 +84,9 @@ namespace PLCProgramTester.FileReading
         private static int ReadMaxErrorTime(INIHandler handler)
         {
             int maxErrorTime;
-            if(!handler.TryGetInt(String.Empty, "max error time", out maxErrorTime))
+            if(!handler.TryGetInt(String.Empty, _keyMaxErrorTime, out maxErrorTime))
             {
-                Console.WriteLine($"Ошибка при чтении поля \"max time error\" настроек. Использовано значение по умолчанию ({_defaultMaxErrorTime})");
+                Console.WriteLine($"Ошибка при чтении поля \"{_keyMaxErrorTime}\" настроек. Использовано значение по умолчанию ({_defaultMaxErrorTime})");
                 return _defaultMaxErrorTime;
             }
             return maxErrorTime;
@@ -91,11 +101,7 @@ namespace PLCProgramTester.FileReading
             var PLCtoRaspberryAddress = new Dictionary<string, int>();
 
             //Выходы Raspberry
-            string[] PLCOutputs = new string[] { 
-                "Y0", "Y1", "Y2", "Y3", "Y4", 
-                "Y5", "Y6", "Y7", "Y8", "Y9",
-                "YA", "YB", "YC", "YD" };
-            foreach(var address in PLCOutputs)
+            foreach(var address in _keysPLCOutputs)
             {
                 int raspberryAddress;
                 if(handler.TryGetInt("Addresses", address, out raspberryAddress))
@@ -104,12 +110,7 @@ namespace PLCProgramTester.FileReading
 
 
             //Входы Raspberry
-            string[] PLCInputs = new string[] {
-                "X0", "X1", "X2", "X3", "X4",
-                "X5", "X6", "X7", "X8", "X9",
-                "XA", "XB", "XC", "XD", "XE", 
-                "XF" };
-            foreach(var address in PLCInputs)
+            foreach(var address in _keysPLCInputs)
             {
                 int raspberryAddress;
                 if(handler.TryGetInt("Addresses", address, out raspberryAddress))
