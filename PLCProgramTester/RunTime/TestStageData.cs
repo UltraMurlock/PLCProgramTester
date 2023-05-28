@@ -11,21 +11,17 @@
         public int Duration;
 
         /// <summary>
-        /// Массив активности выходов ПЛК, на который ориентируется алгоритм проверки на этом этапе
+        /// Массив активности входов Raspberry (выходов ПЛК), на который ориентируется алгоритм проверки на этом этапе
         /// </summary>
-        public bool[] PLCOutputs;
+        public bool[] GPIOinputs = new bool[0];
 
         /// <summary>
-        /// Массив активности входов ПЛК, отвечающий за их состояние на этом этапе
+        /// Массив активности выходов Raspberry (входов ПЛК), отвечающий за их состояние на этом этапе
         /// </summary>
-        public bool[] PLCInputs;
+        public bool[] GPIOoutputs = new bool[0];
 
 
 
-        public TestStageData()
-        {
-            PLCOutputs = new bool[0];
-            PLCInputs = new bool[0];
-        }
+        public TestStageData() { }
     }
 }

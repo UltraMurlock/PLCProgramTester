@@ -19,7 +19,21 @@ namespace PLCProgramTester.FileReading
         /// <returns>Истина, если тест прочитан успешно</returns>
         public static bool TryDecodeTest(string path, out TestData test)
         {
+            if(Settings.DebugMode)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"Чтение теста {path}");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
+
             test = new TestData(path);
+            if(!File.Exists(path))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Файл {path} не существует!");
+                Console.ForegroundColor = ConsoleColor.Gray;
+                return false;
+            }
             string[] lines = File.ReadAllLines(path);
 
             //Поиск первой строки теста (строки инициализации)
@@ -28,7 +42,9 @@ namespace PLCProgramTester.FileReading
             {
                 if (i == lines.Length)
                 {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"Все строки теста {path} являются комментариями или пустыми");
+                    Console.ForegroundColor = ConsoleColor.Gray;
                     return false;
                 }
 
@@ -38,18 +54,18 @@ namespace PLCProgramTester.FileReading
                     continue;
                 }
 
-                if (!TryInitialize(lines[i], out var inputIndexAddressPairs, out var outputIndexAddressPairs))
+                if (!TryInitialize(lines[i], out test.GPIOinputs, out test.GPIOoutputs))
                 {
-                    Console.WriteLine($"Ошибка инициализации теста {path} в строке {i}");
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Ошибка инициализации теста {path} в строке {i}"); 
+                    Console.ForegroundColor = ConsoleColor.Gray;
                     return false;
                 }
-                test.PLCInputsIndexGPIOPairs = inputIndexAddressPairs;
-                test.PLCOutputsIndexGPIOPairs = outputIndexAddressPairs;
                 break;
             }
 
 
-            //Обработка контрольных точек
+            //Обработка этапов теста
             for (i++; i < lines.Length; i++)
             {
                 if (IsWhiteSpaceOrComment(lines[i]))
@@ -57,13 +73,16 @@ namespace PLCProgramTester.FileReading
 
                 if (!TryDecodeLine(lines[i], out var checkPoint))
                 {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"Ошибка чтения этапа теста {path} в строке {i}");
+                    Console.ForegroundColor = ConsoleColor.Gray;
                     return false;
                 }
                 test.Stages.Enqueue(checkPoint);
             }
 
-            Console.WriteLine($"Тест {path} прочитан успешно");
+            if(Settings.DebugMode)
+                Console.WriteLine($"Тест {path} прочитан успешно");
             return true;
         }
 
@@ -89,42 +108,57 @@ namespace PLCProgramTester.FileReading
         /// с портами Raspberry
         /// </summary>
         /// <param name="line">Строка для инициализации</param>
-        /// <param name="outputDictionary">Индекс столбца (выхода ПЛК) -> Порт Raspberry</param>
-        /// <param name="inputDictionary">Индекс столбца (входа ПЛК) -> Порт Raspberry</param>
+        /// <param name="inputGPIOAdresses">Входы Raspberry, расположенные в том же порядке, что и выходы ПЛК</param>
+        /// <param name="outputGPIOAdresses">Выходы Raspberry, расположенные в том же порядке, что и входы ПЛК</param>
         /// <returns>Истина, если инициализация прошла успешно</returns>
-        private static bool TryInitialize(string line, out Dictionary<int, int> inputDictionary, out Dictionary<int, int> outputDictionary)
+        private static bool TryInitialize(string line, out int[] GPIOinputs, out int[] GPIOoutputs)
         {
-            outputDictionary = new Dictionary<int, int>();
-            inputDictionary = new Dictionary<int, int>();
+            GPIOinputs = new int[0];
+            GPIOoutputs = new int[0];
+
+            List<int> GPIOinputsList = new List<int>();
+            List<int> GPIOoutputsList = new List<int>();
 
             if (!TrySplitLine(line, out var splittedLine))
                 return false;
 
-            for (int i = 0; i < splittedLine.Outputs.Length; i++)
+            for (int i = 0; i < splittedLine.PLCOutputs.Length; i++)
             {
-                string PLCAddress = splittedLine.Outputs[i];
+                string PLCAddress = splittedLine.PLCOutputs[i];
                 if(!Settings.PLCtoRaspberryAddresses.ContainsKey(PLCAddress))
                 {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"Запрашиваемый порт ПЛК {PLCAddress} не сопряжён с портом Raspberry в файле settings.ini");
+                    Console.ForegroundColor = ConsoleColor.Gray;
                     return false;
                 }
 
                 int raspberryAddress = Settings.PLCtoRaspberryAddresses[PLCAddress];
-                outputDictionary.Add(i, raspberryAddress);
-            }
+                GPIOinputsList.Add(raspberryAddress);
 
-            for (int i = 0; i < splittedLine.Inputs.Length; i++)
+                if(Settings.DebugMode)
+                    Console.WriteLine($"Выход Raspberry {raspberryAddress} связан с {PLCAddress}");
+            }
+            GPIOinputs = GPIOinputsList.ToArray();
+
+            for (int i = 0; i < splittedLine.PLCInputs.Length; i++)
             {
-                string PLCAddress = splittedLine.Inputs[i];
+                string PLCAddress = splittedLine.PLCInputs[i];
                 if(!Settings.PLCtoRaspberryAddresses.ContainsKey(PLCAddress))
                 {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"Запрашиваемый порт ПЛК {PLCAddress} не сопряжён с портом Raspberry в файле settings.ini");
+                    Console.ForegroundColor = ConsoleColor.Gray;
                     return false;
                 }
 
                 int raspberryAddress = Settings.PLCtoRaspberryAddresses[PLCAddress];
-                inputDictionary.Add(i, raspberryAddress);
+                GPIOoutputsList.Add(raspberryAddress);
+
+                if(Settings.DebugMode)
+                    Console.WriteLine($"Вход Raspberry {raspberryAddress} связан с {PLCAddress}");
             }
+            GPIOoutputs = GPIOoutputsList.ToArray();
 
             return true;
         }
@@ -133,18 +167,18 @@ namespace PLCProgramTester.FileReading
         /// Преобразует сырую строку об этапе теста в TestDtageData
         /// </summary>
         /// <returns>Истина, если преобразование прошло успешно</returns>
-        private static bool TryDecodeLine(string line, out TestStageData checkPoint)
+        private static bool TryDecodeLine(string line, out TestStageData stage)
         {
-            checkPoint = new TestStageData();
+            stage = new TestStageData();
 
             if (!TrySplitLine(line, out var splittedLine))
                 return false;
 
-            if (!int.TryParse(splittedLine.Time, out checkPoint.Duration))
+            if (!int.TryParse(splittedLine.Time, out stage.Duration))
                 return false;
-            if (!TryParseArrayToBool(splittedLine.Outputs, out checkPoint.PLCOutputs))
+            if(!TryParseArrayToBool(splittedLine.PLCInputs, out stage.GPIOoutputs))
                 return false;
-            if (!TryParseArrayToBool(splittedLine.Inputs, out checkPoint.PLCInputs))
+            if (!TryParseArrayToBool(splittedLine.PLCOutputs, out stage.GPIOinputs))
                 return false;
 
             return true;
@@ -171,13 +205,13 @@ namespace PLCProgramTester.FileReading
             if (splittedPinsString.Length != 2)
                 return false;
 
-            string[] outputsString = splittedPinsString[0].Split(' ');
-            outputsString = RemoveWhiteSpaceStrings(outputsString);
-            result.Outputs = outputsString;
+            string[] PLCinputsString = splittedPinsString[0].Split(' ');
+            PLCinputsString = RemoveWhiteSpaceStrings(PLCinputsString);
+            result.PLCInputs = PLCinputsString;
 
-            string[] inputsString = splittedPinsString[1].Split(' ');
-            inputsString = RemoveWhiteSpaceStrings(inputsString);
-            result.Inputs = inputsString;
+            string[] PLCoutputsString = splittedPinsString[1].Split(' ');
+            PLCoutputsString = RemoveWhiteSpaceStrings(PLCoutputsString);
+            result.PLCOutputs = PLCoutputsString;
 
             return true;
         }

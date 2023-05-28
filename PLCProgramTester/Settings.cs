@@ -27,5 +27,10 @@
         /// Режим дебага
         /// </summary>
         public static bool DebugMode;
+
+        /// <summary>
+        /// Название директории, в которой должны быть расположены тесты и другие директории с тестами
+        /// </summary>
+        public const string TestDirectory = "tests\\";
     }
 }

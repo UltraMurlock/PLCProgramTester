@@ -19,14 +19,13 @@ namespace PLCProgramTester
 
 
         /// <summary>
-        /// Индекс выхода ПЛК -> Порт Raspberry
+        /// Индекс выхода ПЛК -> Вход Raspberry
         /// </summary>
-        public Dictionary<int, int> PLCOutputsIndexGPIOPairs = new Dictionary<int, int>();
-
+        public int[] GPIOinputs = new int[0];
         /// <summary>
-        /// Индекс входа ПЛК -> Порт Raspberry
+        /// Индекс входа ПЛК -> Выход Raspberry
         /// </summary>
-        public Dictionary<int, int> PLCInputsIndexGPIOPairs = new Dictionary<int, int>();
+        public int[] GPIOoutputs = new int[0];
 
 
 
@@ -52,25 +51,27 @@ namespace PLCProgramTester
                 TestStageData stage = Stages.ElementAt(j);
                 Console.WriteLine($"Продолжительность этапа: {stage.Duration} ms");
 
-                Console.WriteLine("Выходы ПЛК:");
-                if(stage.PLCOutputs != null)
+                Console.WriteLine("Выходы Raspberry:");
+                if(stage.GPIOoutputs != null)
                 {
-                    for(int i = 0; i < stage.PLCOutputs.Length; i++)
+                    for(int i = 0; i < stage.GPIOoutputs.Length; i++)
                     {
-                        int address = PLCOutputsIndexGPIOPairs[i];
-                        Console.Write($"{address} = {stage.PLCOutputs[i]}\t");
+                        int address = GPIOoutputs[i];
+                        Console.Write($"{address} = {stage.GPIOoutputs[i]}\t");
                     }
                 }
+                Console.WriteLine();
 
-                Console.WriteLine("\nВходы ПЛК:");
-                if(stage.PLCInputs != null)
+                Console.WriteLine("Входы Raspberry:");
+                if(stage.GPIOinputs != null)
                 {
-                    for(int i = 0; i < stage.PLCInputs.Length; i++)
+                    for(int i = 0; i < stage.GPIOinputs.Length; i++)
                     {
-                        int address = PLCInputsIndexGPIOPairs[i];
-                        Console.Write($"{address} = {stage.PLCInputs[i]}\t");
+                        int address = GPIOinputs[i];
+                        Console.Write($"{address} = {stage.GPIOinputs[i]}\t");
                     }
                 }
+                Console.WriteLine();
                 Console.WriteLine();
             }
             Console.WriteLine();

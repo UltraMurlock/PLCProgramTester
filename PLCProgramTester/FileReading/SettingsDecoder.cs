@@ -33,6 +33,13 @@ namespace PLCProgramTester.FileReading
             bool debugMode = ReadDebugMode(handler);
             Settings.DebugMode = debugMode;
 
+            if(Settings.DebugMode)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"Чтение файла параметров");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
+
             int maxErrorTime = ReadMaxErrorTime(handler);
             Settings.MaxErrorTime = maxErrorTime;
 
@@ -52,7 +59,9 @@ namespace PLCProgramTester.FileReading
             bool debugMode;
             if(!handler.TryGetBool(String.Empty, _keyDebug, out debugMode))
             {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Ошибка при чтении поля \"{_keyDebug}\" настроек. Использовано значение по умолчанию ({_defaultDebug})");
+                Console.ForegroundColor = ConsoleColor.Gray;
                 return _defaultDebug;
             }
             return debugMode;
@@ -69,7 +78,9 @@ namespace PLCProgramTester.FileReading
             int maxErrorTime;
             if(!handler.TryGetInt(String.Empty, _keyChecksFrequency, out maxErrorTime))
             {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Ошибка при чтении поля \"{_keyChecksFrequency}\" настроек. Использовано значение по умолчанию ({_defaultChecksFrequency})");
+                Console.ForegroundColor = ConsoleColor.Gray;
                 return _defaultMaxErrorTime;
             }
             return maxErrorTime;
@@ -86,7 +97,9 @@ namespace PLCProgramTester.FileReading
             int maxErrorTime;
             if(!handler.TryGetInt(String.Empty, _keyMaxErrorTime, out maxErrorTime))
             {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Ошибка при чтении поля \"{_keyMaxErrorTime}\" настроек. Использовано значение по умолчанию ({_defaultMaxErrorTime})");
+                Console.ForegroundColor = ConsoleColor.Gray;
                 return _defaultMaxErrorTime;
             }
             return maxErrorTime;

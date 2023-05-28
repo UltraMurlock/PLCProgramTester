@@ -14,13 +14,12 @@ namespace PLCProgramTester.RunTime
         /// <returns>Истина, если тест пройден успешно</returns>
         public static bool Start(TestData testData)
         {
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine($"Тест {testData.Path} запущен в проверку");
+            Console.ForegroundColor = ConsoleColor.Gray;
 
-            //!!!НЕ ЗАБЫТЬ!!!
-            //Перестроить использование словарей на использование массивов, так как
-            //сейчас массив ключей всё равно совпадает с индексами в массиве значений
-            Dictionary<int, int> outputsIndexAddressPairs = testData.PLCOutputsIndexGPIOPairs;
-            Dictionary<int, int> inputsIndexAddressPairs = testData.PLCInputsIndexGPIOPairs;
+            int[] GPIOInputsAddresses = testData.GPIOinputs;
+            int[] GPIOOutputsAddresses = testData.GPIOoutputs;
 
             TestStageData stage;
 
@@ -37,21 +36,21 @@ namespace PLCProgramTester.RunTime
                 stageStopwatch.Restart();
 
                 stage = testData.Stages.Dequeue();
-                UpdateOutputs(stage, outputsIndexAddressPairs);
+                UpdateOutputs(stage, GPIOOutputsAddresses);
 
-                //Массив, помогающий отслеживать изменения состояний выходов ПЛК во времени
-                bool[] PLCOutputsPreviousStage = ReadInputs(inputsIndexAddressPairs);
+                //Массив, помогающий отслеживать изменения состояний входов Raspberry (выходов ПЛК) во времени
+                bool[] inputsPreviousStage = ReadInputs(GPIOInputsAddresses);
                 while(stageStopwatch.ElapsedMilliseconds < stage.Duration)
                 {
                     iterationStopwatch.Restart();
 
-                    bool[] PLCOutputsCurrentStage = ReadInputs(inputsIndexAddressPairs);
-                    if(!CheckInputs(stage, (int)stageStopwatch.ElapsedMilliseconds, PLCOutputsCurrentStage, PLCOutputsPreviousStage, inputsIndexAddressPairs))
+                    bool[] inputsCurrentStage = ReadInputs(GPIOInputsAddresses);
+                    if(!CheckInputs(stage, (int)stageStopwatch.ElapsedMilliseconds, inputsCurrentStage, inputsPreviousStage, GPIOInputsAddresses))
                     {
                         errorFlag = true;
                         break;
                     }
-                    PLCOutputsPreviousStage = PLCOutputsCurrentStage;
+                    inputsPreviousStage = inputsCurrentStage;
 
 
                     int sleepTime = Settings.ChecksFrequency - (int)iterationStopwatch.ElapsedMilliseconds;
@@ -62,7 +61,7 @@ namespace PLCProgramTester.RunTime
             stageStopwatch.Stop();
             iterationStopwatch.Stop();
 
-            DeactivateAllOutputs(outputsIndexAddressPairs);
+            DeactivateAllOutputs(GPIOOutputsAddresses);
 
             if(errorFlag)
             {
@@ -70,38 +69,47 @@ namespace PLCProgramTester.RunTime
                 Console.WriteLine($"Тест {testData.Path} провален!");
                 Console.ForegroundColor = ConsoleColor.Gray;
             }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"Тест {testData.Path} успешно пройден!");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
+
             return !errorFlag;
         }
 
 
 
         /// <summary>
-        /// Обновление сигнала на входах ПЛК (выходах Raspberry)
+        /// Обновление сигнала на выходах Raspberry (входах ПЛК)
         /// </summary>
         /// <param name="stage">Новая контрольная точка</param>
-        private static void UpdateOutputs(TestStageData stage, Dictionary<int, int> outputsIndexAddressPairs)
+        private static void UpdateOutputs(TestStageData stage, int[] GPIOoutputsAddresses)
         {
-            for(int i = 0; i < stage.PLCOutputs.Length; i++)
+            for(int i = 0; i < stage.GPIOoutputs.Length; i++)
             {
-                bool active = stage.PLCOutputs[i];
+                bool active = stage.GPIOoutputs[i];
                 PinValue pinValue = active ? PinValue.High : PinValue.Low;
 
-                int raspberryAddress = outputsIndexAddressPairs[i];
+                int raspberryAddress = GPIOoutputsAddresses[i];
 #if !DEBUG
                 Program.Controller.Write(raspberryAddress, pinValue);
 #endif
+                if(Settings.DebugMode)
+                    Console.WriteLine($"GPIO выход {raspberryAddress} включён на {pinValue}");
             }
         }
 
         /// <summary>
-        /// Проверка выходов ПЛК на соответствие заданным на этапе (входов Raspberry)
+        /// Проверка входов Raspberry (выходов ПЛК) на соответствие заданным на этапе
         /// </summary>
-        private static bool CheckInputs(TestStageData stage, int timeFromStageStart, bool[] currentIterationActivity, bool[] previousIterationActivity, Dictionary<int, int> inputsIndexAddressPairs)
+        private static bool CheckInputs(TestStageData stage, int timeFromStageStart, bool[] currentIterationActivity, bool[] previousIterationActivity, int[] GPIOinputsAddresses)
         {
             for(int i = 0; i < previousIterationActivity.Length; i++)
             {
                 //Если значение правильное, то пропускаем
-                if(currentIterationActivity[i] == stage.PLCOutputs[i])
+                if(currentIterationActivity[i] == stage.GPIOinputs[i])
                     continue;
 
                 //Если значение на входе Raspberry не изменилось (не произошло инзменения с правильного на неправильное)
@@ -111,6 +119,9 @@ namespace PLCProgramTester.RunTime
                     continue;
 
                 //Иначе, тест провален
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Ошибка на входе {GPIOinputsAddresses[i]} Raspberry");
+                Console.ForegroundColor = ConsoleColor.Gray;
                 return false;
             }
 
@@ -118,15 +129,15 @@ namespace PLCProgramTester.RunTime
         }
 
         /// <summary>
-        /// Считывание активности выходов ПЛК (входов Raspberry)
+        /// Считывание активности входов Raspberry (выходов ПЛК)
         /// </summary>
-        private static bool[] ReadInputs(Dictionary<int, int> inputsIndexAddressPairs)
+        private static bool[] ReadInputs(int[] GPIOinputsAddresses)
         {
-            bool[] inputsActivity = new bool[inputsIndexAddressPairs.Count];
+            bool[] inputsActivity = new bool[GPIOinputsAddresses.Length];
 
-            for(int i = 0; i < inputsIndexAddressPairs.Count; i++)
+            for(int i = 0; i < GPIOinputsAddresses.Length; i++)
             {
-                int gpio = inputsIndexAddressPairs[i];
+                int gpio = GPIOinputsAddresses[i];
 #if !DEBUG
                 PinValue pinValue = Program.Controller.Read(gpio);
                 inputsActivity[i] = pinValue == PinValue.High;
@@ -138,11 +149,9 @@ namespace PLCProgramTester.RunTime
         /// <summary>
         /// Установка PinValue.Low на всех выходах Raspberry
         /// </summary>
-        private static void DeactivateAllOutputs(Dictionary<int, int> outputsIndexAddressPairs)
+        private static void DeactivateAllOutputs(int[] outputsIndexAddressPairs)
         {
-            var addresses = outputsIndexAddressPairs.Values;
-
-            foreach(var address in addresses)
+            foreach(var address in outputsIndexAddressPairs)
             {
 #if !DEBUG
                 Program.Controller.Write(address, PinValue.Low);
