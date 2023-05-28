@@ -9,25 +9,59 @@ namespace PLCProgramTester
         public static GpioController Controller = new GpioController();
 
 
-
+        /* Примечание: все тесты должны храниться в папке tests в корневом каталоге программы.
+         * Путь к тестам и директориям также вводится относительно папки tests.
+         * Тесты должны иметь расширение .txt, а имя должно включать расширение */
         private static void Main()
         {
             Initialize();
-            DoQueueOfTests(Settings.TestDirectory + "First Lesson");
+
+            while(true)
+            {
+                Console.WriteLine("\nВведите имя файла или название директории с тестами");
+                string? rawInput = Console.ReadLine();
+                if(String.IsNullOrEmpty(rawInput))
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Ничего не введено!");
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    continue;
+                }
+
+                ReadInput(rawInput);
+            }
         }
 
 
 
-        public static void Initialize()
+        private static void Initialize()
         {
             SettingsDecoder.ReadSettings();
             OpenPins(Settings.PLCtoRaspberryAddresses);
         }
+
+        /// <summary>
+        /// Определяет, что содержит строка и запускает либо одиночный тест,
+        /// либо очередь тестов
+        /// </summary>
+        private static void ReadInput(string path)
+        {
+            if(path.EndsWith(".txt"))
+            {
+                DoTest(Settings.TestDirectory + path);
+            }
+            else
+            {
+                DoQueueOfTests(Settings.TestDirectory + path);
+            }
+        }
+
         /// <summary>
         /// Запускает в проверку очередь тестов
         /// </summary>
         /// <param name="path">Путь к директории</param>
-        public static bool DoQueueOfTests(string path)
+        /// 
+        private static bool DoQueueOfTests(string path)
         {
             if(!Directory.Exists(path))
             {
