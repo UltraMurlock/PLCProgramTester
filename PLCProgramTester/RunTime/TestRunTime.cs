@@ -64,6 +64,12 @@ namespace PLCProgramTester.RunTime
 
             DeactivateAllOutputs(outputsIndexAddressPairs);
 
+            if(errorFlag)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Тест {testData.Path} провален!");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
             return !errorFlag;
         }
 
@@ -105,9 +111,6 @@ namespace PLCProgramTester.RunTime
                     continue;
 
                 //Иначе, тест провален
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Тест провален!");
-                Console.ForegroundColor = ConsoleColor.Gray;
                 return false;
             }
 
@@ -132,7 +135,9 @@ namespace PLCProgramTester.RunTime
             return inputsActivity;
         }
 
-
+        /// <summary>
+        /// Установка PinValue.Low на всех выходах Raspberry
+        /// </summary>
         private static void DeactivateAllOutputs(Dictionary<int, int> outputsIndexAddressPairs)
         {
             var addresses = outputsIndexAddressPairs.Values;

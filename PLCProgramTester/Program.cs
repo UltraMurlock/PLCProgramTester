@@ -34,6 +34,9 @@ namespace PLCProgramTester
             TestRunTime.Start(test);
         }
 
+        /// <summary>
+        /// Открытие GPIO-пинов Raspberry и их связывание с ПЛК
+        /// </summary>
         private static void OpenPins(Dictionary<string, int> addressPairs)
         {
             Console.WriteLine("Открытие GPIO-пинов Raspberry и их связывание с ПЛК");

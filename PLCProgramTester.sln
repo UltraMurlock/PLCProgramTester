@@ -8,20 +8,25 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PLCProgramTester", "PLCProg
 		{F7BE2443-6B51-485D-B582-2E854F67E5D6} = {F7BE2443-6B51-485D-B582-2E854F67E5D6}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "INIIO", "INIIO\INIIO.csproj", "{F7BE2443-6B51-485D-B582-2E854F67E5D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "INIIO", "INIIO\INIIO.csproj", "{F7BE2443-6B51-485D-B582-2E854F67E5D6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Raspberry Test|Any CPU = Raspberry Test|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{7D05368F-AD15-4BC5-97FE-99A7FBAD038F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7D05368F-AD15-4BC5-97FE-99A7FBAD038F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D05368F-AD15-4BC5-97FE-99A7FBAD038F}.Raspberry Test|Any CPU.ActiveCfg = Raspberry Test|Any CPU
+		{7D05368F-AD15-4BC5-97FE-99A7FBAD038F}.Raspberry Test|Any CPU.Build.0 = Raspberry Test|Any CPU
 		{7D05368F-AD15-4BC5-97FE-99A7FBAD038F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D05368F-AD15-4BC5-97FE-99A7FBAD038F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F7BE2443-6B51-485D-B582-2E854F67E5D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F7BE2443-6B51-485D-B582-2E854F67E5D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7BE2443-6B51-485D-B582-2E854F67E5D6}.Raspberry Test|Any CPU.ActiveCfg = Raspberry Test|Any CPU
+		{F7BE2443-6B51-485D-B582-2E854F67E5D6}.Raspberry Test|Any CPU.Build.0 = Raspberry Test|Any CPU
 		{F7BE2443-6B51-485D-B582-2E854F67E5D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7BE2443-6B51-485D-B582-2E854F67E5D6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
