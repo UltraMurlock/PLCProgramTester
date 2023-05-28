@@ -40,9 +40,9 @@ namespace PLCProgramTester
             foreach(var address in addressPairs.Keys)
             {
                 int index = addressPairs[address];
-                //Пока закомментировано, так как вызывает исключение на Windows
-                //Controller.OpenPin(index);
-
+#if !DEBUG
+                Controller.OpenPin(index);
+#endif
                 if(Settings.DebugMode)
                     Console.WriteLine($"GPIO {index} -> {address}");
             }

@@ -11,7 +11,8 @@ namespace PLCProgramTester.RunTime
         /// <summary>
         /// Запуск теста
         /// </summary>
-        public static void Start(TestData testData)
+        /// <returns>Истина, если тест пройден успешно</returns>
+        public static bool Start(TestData testData)
         {
             Console.WriteLine($"Тест {testData.Path} запущен в проверку");
 
@@ -62,6 +63,8 @@ namespace PLCProgramTester.RunTime
             iterationStopwatch.Stop();
 
             DeactivateAllOutputs(outputsIndexAddressPairs);
+
+            return !errorFlag;
         }
 
 
@@ -78,8 +81,9 @@ namespace PLCProgramTester.RunTime
                 PinValue pinValue = active ? PinValue.High : PinValue.Low;
 
                 int raspberryAddress = outputsIndexAddressPairs[i];
-                //Пока закомментировано, так как вызывает исключение на Windows
-                //Program.Controller.Write(raspberryAddress, pinValue);
+#if !DEBUG
+                Program.Controller.Write(raspberryAddress, pinValue);
+#endif
             }
         }
 
@@ -120,9 +124,10 @@ namespace PLCProgramTester.RunTime
             for(int i = 0; i < inputsIndexAddressPairs.Count; i++)
             {
                 int gpio = inputsIndexAddressPairs[i];
-                //Пока закомментировано, так как вызывает исключение на Windows
-                //PinValue pinValue = Program.Controller.Read(gpio);
-                //inputsActivity[i] = pinValue == PinValue.High;
+#if !DEBUG
+                PinValue pinValue = Program.Controller.Read(gpio);
+                inputsActivity[i] = pinValue == PinValue.High;
+#endif
             }
             return inputsActivity;
         }
@@ -134,8 +139,9 @@ namespace PLCProgramTester.RunTime
 
             foreach(var address in addresses)
             {
-                //Пока закомментировано, так как вызывает исключение на Windows
-                //Program.Controller.Write(address, PinValue.Low);
+#if !DEBUG
+                Program.Controller.Write(address, PinValue.Low);
+#endif
             }
         }
     }
