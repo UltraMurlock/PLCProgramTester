@@ -22,8 +22,6 @@ namespace PLCProgramTester.RunTime
             int[] GPIOOutputsAddresses = testData.GPIOoutputs;
 
             TestStageData stage;
-
-
             Stopwatch stageStopwatch = new Stopwatch();
             Stopwatch iterationStopwatch = new Stopwatch();
 
@@ -38,22 +36,24 @@ namespace PLCProgramTester.RunTime
                 stage = testData.Stages.Dequeue();
                 UpdateOutputs(stage, GPIOOutputsAddresses);
 
-                //Массив, помогающий отслеживать изменения состояний входов Raspberry (выходов ПЛК) во времени
+                //Массив, помогающий отслеживать изменения
+                //состояний входов Raspberry (выходов ПЛК) во времени
                 bool[] inputsPreviousStage = ReadInputs(GPIOInputsAddresses);
                 while(stageStopwatch.ElapsedMilliseconds < stage.Duration)
                 {
                     iterationStopwatch.Restart();
 
                     bool[] inputsCurrentStage = ReadInputs(GPIOInputsAddresses);
-                    if(!CheckInputs(stage, (int)stageStopwatch.ElapsedMilliseconds, inputsCurrentStage, inputsPreviousStage, GPIOInputsAddresses))
+                    if(!CheckInputs(stage, (int)stageStopwatch.ElapsedMilliseconds, 
+                        inputsCurrentStage, inputsPreviousStage, GPIOInputsAddresses))
                     {
                         errorFlag = true;
                         break;
                     }
                     inputsPreviousStage = inputsCurrentStage;
 
-
-                    int sleepTime = Settings.ChecksFrequency - (int)iterationStopwatch.ElapsedMilliseconds;
+                    int elapsed = (int)iterationStopwatch.ElapsedMilliseconds;
+                    int sleepTime = Settings.ChecksFrequency - elapsed;
                     sleepTime = sleepTime < 0 ? 0 : sleepTime;
                     Thread.Sleep(sleepTime);
                 }
@@ -104,7 +104,9 @@ namespace PLCProgramTester.RunTime
         /// <summary>
         /// Проверка входов Raspberry (выходов ПЛК) на соответствие заданным на этапе
         /// </summary>
-        private static bool CheckInputs(TestStageData stage, int timeFromStageStart, bool[] currentIterationActivity, bool[] previousIterationActivity, int[] GPIOinputsAddresses)
+        private static bool CheckInputs(TestStageData stage, int timeFromStageStart, 
+            bool[] currentIterationActivity, bool[] previousIterationActivity, 
+            int[] GPIOinputsAddresses)
         {
             for(int i = 0; i < previousIterationActivity.Length; i++)
             {
@@ -112,10 +114,13 @@ namespace PLCProgramTester.RunTime
                 if(currentIterationActivity[i] == stage.GPIOinputs[i])
                     continue;
 
-                //Если значение на входе Raspberry не изменилось (не произошло инзменения с правильного на неправильное)
-                //И время на изменение не закончилось (неправильное значение ещё может измениться в будущем без ошибки),
-                //то пропускаем
-                if(currentIterationActivity[i] == previousIterationActivity[i] && timeFromStageStart < Settings.MaxErrorTime)
+                // Если значение на входе Raspberry не изменилось
+                // (не произошло инзменения с правильного на неправильное)
+                // И время на изменение не закончилось (неправильное
+                // значение ещё может измениться в будущем без ошибки),
+                // то пропускаем
+                if(currentIterationActivity[i] == previousIterationActivity[i] && 
+                    timeFromStageStart < Settings.MaxErrorTime)
                     continue;
 
                 //Иначе, тест провален
